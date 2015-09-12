@@ -22,7 +22,7 @@
 // 5- Run this script directly from your browser: you should see 'Hello, FIRSTNAME'
 
 /// SETUP - NEED TO BE CHANGED
-$token = 'c489b0789dc043f4de7d60ea5b637342';
+$token = '1aff5972b673566478eecd5a3fcd95c0';
 $domainname = 'http://elearning.ingenieria.usac.edu.gt/campus';
 
 /// FUNCTION NAME
