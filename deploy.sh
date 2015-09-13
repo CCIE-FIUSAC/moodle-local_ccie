@@ -9,7 +9,9 @@ if [ $# -lt 1 ] || [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
     echo "" >&2
     exit 0
 fi
-version=2015091000
+# versión del plugin
+version=2014051202
+# destino del instalador .zip
 destino=/mnt/memo
 if [[ $1 == "lo" ]]; then
   cd ~/E/src/
@@ -21,7 +23,6 @@ if [[ $1 == "lo" ]]; then
   rm -rf ccie
 elif [[ $1 == "package" ]]; then
   cd ~/E/src
-  rm $destino/local_ccie_moodle28_$version.zip
   cp -r moodle-local_ccie $destino
   mv $destino/{moodle-local_ccie,ccie}
   cd $destino/
@@ -29,4 +30,7 @@ elif [[ $1 == "package" ]]; then
   zip -r local_ccie_moodle28_$version.zip ccie
   rm -rf ccie
   thunar .
+elif [[ $1 == "change" ]]; then
+  cd ~/E/src
+  sudo cp -r moodle-local_ccie/externallib.php /var/www/html/campus/local/ccie
 fi
