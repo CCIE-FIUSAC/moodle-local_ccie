@@ -29,13 +29,27 @@ $functions = array(
                 'classpath'   => 'local/ccie/externallib.php',
                 'description' => 'Return Hello World FIRSTNAME. Can change the text (Hello World) sending a new text as parameter',
                 'type'        => 'read',
+        ),
+        'local_ccie_matricular' => array(
+                'classname'   => 'local_ccie_external',
+                'methodname'  => 'matricular',
+                'classpath'   => 'local/ccie/externallib.php',
+                'description' => 'Retorna objeto con mensaje de exito o fracaso',
+                'type'        => 'read',
+        ),
+        'local_ccie_desmatricular' => array(
+                'classname'   => 'local_ccie_external',
+                'methodname'  => 'desmatricular',
+                'classpath'   => 'local/ccie/externallib.php',
+                'description' => 'Retorna objeto con mensaje de exito o fracaso',
+                'type'        => 'read',
         )
 );
 
 // We define the services to install as pre-build services. A pre-build service is not editable by administrator.
 $services = array(
         'Web Service CCIE' => array(
-                'functions' => array ('local_ccie_hello_world'),
+                'functions' => array ('local_ccie_hello_world', 'local_ccie_matricular', 'local_ccie_desmatricular'),
                 'restrictedusers' => 0,
                 'enabled'=>1,
         )

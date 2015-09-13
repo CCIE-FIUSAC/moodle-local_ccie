@@ -22,20 +22,30 @@
 // 5- Run this script directly from your browser: you should see 'Hello, FIRSTNAME'
 
 /// SETUP - NEED TO BE CHANGED
-$token = '1aff5972b673566478eecd5a3fcd95c0';
+$token = '7b1e0ddaeeb967091ffaf49c36712d22';
 $domainname = 'http://elearning.ingenieria.usac.edu.gt/campus';
 
 /// FUNCTION NAME
-$functionname = 'local_ccie_hello_world';
+$functionname = 'local_ccie_matricular';
 
 /// PARAMETERS
-$welcomemsg = 'Hola ccie, ';
-
+$usuario = array(
+  'testusername1',
+  'testfirstname1',
+  'testfirstname1',
+  'testemail1@moodle.com',
+  5/*,
+  array(
+      array('0009A', 500, 600),
+      array('0019A', 100, 200)
+    )*/
+);
 ///// XML-RPC CALL
 header('Content-Type: text/plain');
 $serverurl = $domainname . '/webservice/xmlrpc/server.php'. '?wstoken=' . $token;
 require_once('./curl.php');
 $curl = new curl;
-$post = xmlrpc_encode_request($functionname, array($welcomemsg));
+$post = xmlrpc_encode_request($functionname, $usuario);
+print_r($post);
 $resp = xmlrpc_decode($curl->post($serverurl, $post));
 print_r($resp);
