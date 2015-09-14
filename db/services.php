@@ -34,15 +34,17 @@ $functions = array(
                 'classname'   => 'local_ccie_external',
                 'methodname'  => 'matricular',
                 'classpath'   => 'local/ccie/externallib.php',
-                'description' => 'Retorna objeto con mensaje de exito o fracaso',
-                'type'        => 'read',
+                'description' => 'CCIE matricular usuarios',
+                'capabilities'=> 'enrol/manual:enrol',
+                'type'        => 'write',
         ),
         'local_ccie_desmatricular' => array(
                 'classname'   => 'local_ccie_external',
                 'methodname'  => 'desmatricular',
                 'classpath'   => 'local/ccie/externallib.php',
-                'description' => 'Retorna objeto con mensaje de exito o fracaso',
-                'type'        => 'read',
+                'description' => 'CCIE desmatricular usuarios',
+                'capabilities'=> 'enrol/manual:enrol',
+                'type'        => 'write',
         )
 );
 
