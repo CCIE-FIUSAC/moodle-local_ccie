@@ -105,7 +105,9 @@ class local_ccie_external extends external_api {
       global $DB, $CFG;
 
       require_once($CFG->libdir . '/enrollib.php');
-      // require_once($CFG->dirroot . "/user/lib.php");
+      require_once($CFG->dirroot . '/user/lib.php');
+      $availableauths  = core_component::get_plugin_list('auth');
+      $availablethemes = core_component::get_plugin_list('theme');
 
       $params = self::validate_parameters(self::matricular_parameters(),
               array('username' => $username,
@@ -116,19 +118,43 @@ class local_ccie_external extends external_api {
               'enrolments' => $enrolments
             ));
 
+      // Ensure the current user is allowed to run this function.
+      $context = context_system::instance();
+      self::validate_context($context);
+      require_capability('moodle/user:create', $context);
       $transaction = $DB->start_delegated_transaction(); // Rollback all enrolment if an error occurs
                                                            // (except if the DB doesn't support it).
       // Get the user.
       $user = $DB->get_record('user',
-                    array('email' => $email, 'deleted' => 0, 'mnethostid' => $CFG->mnet_localhost_id));
+                    array('username' => $params['username'], 'deleted' => 0, 'mnethostid' => $CFG->mnet_localhost_id));
 
-      // Create user account
       if (empty($user)){
-        
+        // Make sure that the username doesn't already exist.
+        if ($DB->record_exists('user', array('email' => $params['email'], 'mnethostid' => $CFG->mnet_localhost_id))) {
+            return array('estado'=>1, 'mensaje'=>"Email ${params['email']} ya existe", "username"=>$params['username'], 'enrolments'=>array());
+            throw new invalid_parameter_exception('Email already exists: '.$params['email']);
+        }
+        // Create user account
+        $newuser = new stdClass();
+        $newuser->username = $params['username'];
+        $newuser->email = $params['email'];
+        $newuser->firstname = $params['firstname'];
+        $newuser->lastname = $params['lastname'];
+        // TODO swap $password for ''
+        $newuser->password = 'P4ssw@rd'.$params['username'];
+        // TODO change manual to googleoauth2
+        $newuser->auth = 'manual';
+        $newuser->confirmed = true;
+        $newuser->mnethostid = $CFG->mnet_localhost_id;
+        // TODO change 2nd param to false, when password is ''
+        $newuser->id = user_create_user($newuser, true, true);
+        $user = $newuser;
       } else {
-
+        // User found
+        $username = $user->username;
       }
-      return array("username"=>$params['username'], 'enrolments'=>array(array("courseid"=>$params['enrolments'][0]['idnumber'], "status"=>1), array("courseid"=>$params['enrolments'][1]['idnumber'], "status"=>2)));
+      $transaction->allow_commit();
+      return array('estado'=>0, 'mensaje'=>'Matriculaci&oacute;n exitosa', "username"=>$params['username'], 'enrolments'=>array(array("courseid"=>$params['enrolments'][0]['idnumber'], "status"=>1), array("courseid"=>$params['enrolments'][1]['idnumber'], "status"=>2)));
     }
     public static function desmatricular($welcomemessage = 'Hello world, ') {
       return "hola";
@@ -166,6 +192,8 @@ class local_ccie_external extends external_api {
     public static function matricular_returns() {
       return new external_single_structure(
               array(
+                  'estado' => new external_value(PARAM_TEXT, '0 (Exito) o 1 (fracaso)'),
+                  'mensaje' => new external_value(PARAM_TEXT, 'Breve descripción del resultado'),
                   'username' => new external_value(PARAM_TEXT, 'Carné universitario del estudiante'),
                   'enrolments' => new external_multiple_structure(
                       new external_single_structure(
@@ -177,15 +205,6 @@ class local_ccie_external extends external_api {
                   )
               )
           );
-      return new external_multiple_structure(
-          new external_single_structure(
-              array(
-                  'username' => new external_value(PARAM_TEXT, 'Carné universitario del estudiante'),
-                  'courseid' => new external_value(PARAM_INT, 'Número ID de un curso en moodle'),
-                  'status' => new external_value(PARAM_INT, 'Estado del estudiante dentro del curso: 0 (activo) ó 1 (suspendido)'),
-              )
-          )
-      );
     }
     /**
      * Returns description of method result value

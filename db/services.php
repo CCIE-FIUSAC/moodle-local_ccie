@@ -35,7 +35,7 @@ $functions = array(
                 'methodname'  => 'matricular',
                 'classpath'   => 'local/ccie/externallib.php',
                 'description' => 'CCIE matricular usuarios',
-                'capabilities'=> 'enrol/manual:enrol',
+                'capabilities'=> 'moodle/user:create, enrol/manual:enrol',
                 'type'        => 'write',
         ),
         'local_ccie_desmatricular' => array(
