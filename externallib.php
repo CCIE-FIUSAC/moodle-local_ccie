@@ -152,8 +152,13 @@ class local_ccie_external extends external_api {
         // User found
         $username = $user->username;
       }
+
+      $enrolments = array();
+      foreach ($params['enrolments'] as $enrolment) {
+        $enrolments[] = array('courseid' => $enrolment['idnumber'], 'status' => 0);
+      }
       $transaction->allow_commit();
-      return array('estado'=>0, 'mensaje'=>'Matriculaci&oacute;n exitosa', "username"=>$params['username'], 'enrolments'=>array(array("courseid"=>$params['enrolments'][0]['idnumber'], "status"=>1), array("courseid"=>$params['enrolments'][1]['idnumber'], "status"=>2)));
+      return array('estado'=>0, 'mensaje'=>'Matriculaci&oacute;n exitosa', 'username'=>$params['username'], 'enrolments'=>$enrolments);
     }
     public static function desmatricular($welcomemessage = 'Hello world, ') {
       return "hola";
