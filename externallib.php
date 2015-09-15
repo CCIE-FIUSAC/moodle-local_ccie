@@ -116,17 +116,18 @@ class local_ccie_external extends external_api {
               'enrolments' => $enrolments
             ));
 
-      // $transaction = $DB->start_delegated_transaction(); // Rollback all enrolment if an error occurs
+      $transaction = $DB->start_delegated_transaction(); // Rollback all enrolment if an error occurs
                                                            // (except if the DB doesn't support it).
-      static::log_action("username",$params['username']);
-      static::log_action("firstname",$params['firstname']);
-      static::log_action("lastname",$params['lastname']);
-      static::log_action("email",$params['email']);
-      static::log_action("roleid",$params['roleid']);
-      static::log_action("enrolments",print_r($params['enrolments'], true));
-      static::log_action("enrolments0",print_r($params['enrolments'][0], true));
-      static::log_action("enrolments0idnumber",print_r($params['enrolments'][0]['idnumber'], true));
-      static::log_action("enrolments0idnumber",print_r($params['enrolments'][1]['idnumber'], true));
+      // Get the user.
+      $user = $DB->get_record('user',
+                    array('email' => $email, 'deleted' => 0, 'mnethostid' => $CFG->mnet_localhost_id));
+
+      // Create user account
+      if (empty($user)){
+        
+      } else {
+
+      }
       return array("username"=>$params['username'], 'enrolments'=>array(array("courseid"=>$params['enrolments'][0]['idnumber'], "status"=>1), array("courseid"=>$params['enrolments'][1]['idnumber'], "status"=>2)));
     }
     public static function desmatricular($welcomemessage = 'Hello world, ') {
