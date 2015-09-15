@@ -132,7 +132,6 @@ class local_ccie_external extends external_api {
         // Make sure that the username doesn't already exist.
         if ($DB->record_exists('user', array('email' => $params['email'], 'mnethostid' => $CFG->mnet_localhost_id))) {
             return array('estado'=>1, 'mensaje'=>"Email ${params['email']} ya existe", "username"=>$params['username'], 'enrolments'=>array());
-            throw new invalid_parameter_exception('Email already exists: '.$params['email']);
         }
         // Create user account
         $newuser = new stdClass();
