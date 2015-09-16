@@ -106,8 +106,6 @@ class local_ccie_external extends external_api {
 
       require_once($CFG->libdir . '/enrollib.php');
       require_once($CFG->dirroot . '/user/lib.php');
-      $availableauths  = core_component::get_plugin_list('auth');
-      $availablethemes = core_component::get_plugin_list('theme');
 
       $params = self::validate_parameters(self::matricular_parameters(),
               array('username' => $username,
@@ -176,7 +174,6 @@ class local_ccie_external extends external_api {
         $roles = get_assignable_roles($context);
 
         if (!array_key_exists($roleid, $roles)) {
-            $errorparams = new stdClass();
             $enrolments[] = array('courseid'=>$idnumber, 'status' => 2, 'message'=>"El usuario ${username} no puede matricularse en el curso ${courseid} con role ${roleid}");
             continue;
         }
@@ -195,10 +192,42 @@ class local_ccie_external extends external_api {
           continue;
         }
 
-        $enrolments[] = array('courseid'=>$idnumber, 'status' => 0, 'message'=>'');
+        // Check that the plugin accept enrolment
+        if (!$enrol->allow_enrol($instance)) {
+            $enrolments[] = array('courseid'=>$idnumber, 'status' => 2, 'message'=>"El usuario ${username} no puede matricularse en el curso ${courseid} con role ${roleid}. Plugin no permite matriculación");
+            continue;
+        }
+
+        // check if user is participating in the course
+        $enroleid = $DB->get_record('enrol', array('courseid'=>$courseid, 'enrol'=>'manual'), 'id');
+        $user_enrolments = $DB->get_record('user_enrolments', array('userid'=>$user->id, 'enrolid'=>$enroleid->id ), 'id, status');
+        if (!empty($user_enrolments)){
+          if ($user_enrolments->status == ENROL_USER_ACTIVE){
+            // TODO test
+            $enrolments[] = array('courseid'=>$idnumber, 'status' => 0, 'message'=>"Usuario ${username} activo en ${idnumber} con &eacute;xito");
+            continue;
+          }
+          if ($user_enrolments->status == ENROL_USER_SUSPENDED){
+            // TODO test
+            $record = new stdclass;
+            $record->id = $user_enrolments['id'];
+            $record->status = ENROL_USER_ACTIVE;
+            $DB->update_record('user_enrolments', $record);
+            $enrolments[] = array('courseid'=>$idnumber, 'status' => 0, 'message'=>"Usuario ${username} activo en ${idnumber} con &eacute;xito");
+            continue;
+          }
+        }
+        // Finally proceed the enrolment.
+        $params['timestart'] = isset($params['timestart']) ? $params['timestart'] : 0;
+        $params['timeend'] = isset($params['timeend']) ? $params['timeend'] : 0;
+
+        $enrol->enrol_user($instance, $user->id, $roleid,
+                $params['timestart'], $params['timeend'], ENROL_USER_ACTIVE);
+
+        $enrolments[] = array('courseid'=>$idnumber, 'status' => 0, 'message'=>"Usuario ${username} matriculado en ${idnumber} con &eacute;xito");
       }
       $transaction->allow_commit();
-      return array('status'=>0, 'message'=>'Matriculaci&oacute;n exitosa', 'username'=>$params['username'], 'enrolments'=>$enrolments);
+      return array('status'=>0, 'message'=>'Matriculaci&oacute;n exitosa', 'username'=>$user->username, 'enrolments'=>$enrolments);
     }
     public static function desmatricular($welcomemessage = 'Hello world, ') {
       return "hola";
