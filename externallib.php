@@ -131,7 +131,7 @@ class local_ccie_external extends external_api {
       if (empty($user)){
         // Make sure that the username doesn't already exist.
         if ($DB->record_exists('user', array('email' => $params['email'], 'mnethostid' => $CFG->mnet_localhost_id))) {
-            return array('estado'=>1, 'mensaje'=>"Email ${params['email']} ya existe", "username"=>$params['username'], 'enrolments'=>array());
+            return array('estado'=>1, 'mensaje'=>"Email ${params['email']} ya existe", 'username'=>$params['username'], 'enrolments'=>array());
         }
         // Create user account
         $newuser = new stdClass();
@@ -148,14 +148,54 @@ class local_ccie_external extends external_api {
         // TODO change 2nd param to false, when password is ''
         $newuser->id = user_create_user($newuser, true, true);
         $user = $newuser;
-      } else {
-        // User found
-        $username = $user->username;
+      }
+      $username = $user->username;
+
+      // Retrieve the manual enrolment plugin.
+      $enrol = enrol_get_plugin('manual');
+      if (empty($enrol)) {
+        return array('estado'=>2, 'mensaje'=>'Moodle no puede matricular por falta de plugin "manual"', 'username'=>$params['username'], 'enrolments'=>array());
       }
 
+      $roleid = $params['roleid'];
       $enrolments = array();
       foreach ($params['enrolments'] as $enrolment) {
-        $enrolments[] = array('courseid' => $enrolment['idnumber'], 'status' => 0);
+        $idnumber = $enrolment['idnumber'];
+        $timestart = $enrolment['timestart'];
+        $timeend = $enrolment['timeend'];
+        // Ensure the current user is allowed to run this function in the enrolment context.
+        $courseid = $DB->get_record('course', array('idnumber'=>$idnumber), 'id', MUST_EXIST);
+        $courseid = $courseid->id;
+        $context = context_course::instance($courseid, IGNORE_MISSING);
+        self::validate_context($context);
+
+        // Check that the user has the permission to manual enrol.
+        require_capability('enrol/manual:enrol', $context);
+
+        // Throw an exception if user is not able to assign the role.
+        $roles = get_assignable_roles($context);
+
+        if (!array_key_exists($roleid, $roles)) {
+            $errorparams = new stdClass();
+            $enrolments[] = array('courseid'=>$idnumber, 'status' => 2, 'mensaje'=>"El usuario ${username} no puede matricularse en el curso ${courseid} con role ${roleid}");
+            continue;
+        }
+
+        // Check manual enrolment plugin instance is enabled/exist.
+        $instance = null;
+        $enrolinstances = enrol_get_instances($courseid, true);
+        foreach ($enrolinstances as $courseenrolinstance) {
+          if ($courseenrolinstance->enrol == "manual") {
+              $instance = $courseenrolinstance;
+              break;
+          }
+        }
+        if (empty($instance)) {
+          $enrolments[] = array('courseid'=>$idnumber, 'status' => 2, 'mensaje'=>"El usuario ${username} no puede matricularse en el curso ${courseid} por falta de plugin \"manual\"");
+          continue;
+        }
+
+        $enrolments[] = array('courseid'=>$idnumber, 'status' => 0, 'mensaje'=>'');
       }
       $transaction->allow_commit();
       return array('estado'=>0, 'mensaje'=>'Matriculaci&oacute;n exitosa', 'username'=>$params['username'], 'enrolments'=>$enrolments);
@@ -203,7 +243,8 @@ class local_ccie_external extends external_api {
                       new external_single_structure(
                           array(
                             'courseid' => new external_value(PARAM_TEXT, 'Número ID de un curso en moodle'),
-                            'status' => new external_value(PARAM_INT, 'Estado del estudiante dentro del curso: 0 (activo) ó 1 (suspendido)')
+                            'status' => new external_value(PARAM_INT, 'Estado del estudiante dentro del curso: 0 (activo), 1 (suspendido), 2 (error, revisar mensaje)'),
+                            'mensaje' => new external_value(PARAM_TEXT, 'Descripción del resultado de matriculación')
                           )
                       )
                   )
