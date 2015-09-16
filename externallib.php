@@ -131,7 +131,7 @@ class local_ccie_external extends external_api {
       if (empty($user)){
         // Make sure that the username doesn't already exist.
         if ($DB->record_exists('user', array('email' => $params['email'], 'mnethostid' => $CFG->mnet_localhost_id))) {
-            return array('estado'=>1, 'mensaje'=>"Email ${params['email']} ya existe", 'username'=>$params['username'], 'enrolments'=>array());
+            return array('status'=>1, 'message'=>"Email ${params['email']} ya existe", 'username'=>$params['username'], 'enrolments'=>array());
         }
         // Create user account
         $newuser = new stdClass();
@@ -154,7 +154,7 @@ class local_ccie_external extends external_api {
       // Retrieve the manual enrolment plugin.
       $enrol = enrol_get_plugin('manual');
       if (empty($enrol)) {
-        return array('estado'=>2, 'mensaje'=>'Moodle no puede matricular por falta de plugin "manual"', 'username'=>$params['username'], 'enrolments'=>array());
+        return array('status'=>2, 'message'=>'Moodle no puede matricular por falta de plugin "manual"', 'username'=>$params['username'], 'enrolments'=>array());
       }
 
       $roleid = $params['roleid'];
@@ -177,7 +177,7 @@ class local_ccie_external extends external_api {
 
         if (!array_key_exists($roleid, $roles)) {
             $errorparams = new stdClass();
-            $enrolments[] = array('courseid'=>$idnumber, 'status' => 2, 'mensaje'=>"El usuario ${username} no puede matricularse en el curso ${courseid} con role ${roleid}");
+            $enrolments[] = array('courseid'=>$idnumber, 'status' => 2, 'message'=>"El usuario ${username} no puede matricularse en el curso ${courseid} con role ${roleid}");
             continue;
         }
 
@@ -191,14 +191,14 @@ class local_ccie_external extends external_api {
           }
         }
         if (empty($instance)) {
-          $enrolments[] = array('courseid'=>$idnumber, 'status' => 2, 'mensaje'=>"El usuario ${username} no puede matricularse en el curso ${courseid} por falta de plugin \"manual\"");
+          $enrolments[] = array('courseid'=>$idnumber, 'status' => 2, 'message'=>"El usuario ${username} no puede matricularse en el curso ${courseid} por falta de plugin \"manual\"");
           continue;
         }
 
-        $enrolments[] = array('courseid'=>$idnumber, 'status' => 0, 'mensaje'=>'');
+        $enrolments[] = array('courseid'=>$idnumber, 'status' => 0, 'message'=>'');
       }
       $transaction->allow_commit();
-      return array('estado'=>0, 'mensaje'=>'Matriculaci&oacute;n exitosa', 'username'=>$params['username'], 'enrolments'=>$enrolments);
+      return array('status'=>0, 'message'=>'Matriculaci&oacute;n exitosa', 'username'=>$params['username'], 'enrolments'=>$enrolments);
     }
     public static function desmatricular($welcomemessage = 'Hello world, ') {
       return "hola";
@@ -236,15 +236,15 @@ class local_ccie_external extends external_api {
     public static function matricular_returns() {
       return new external_single_structure(
               array(
-                  'estado' => new external_value(PARAM_TEXT, '0 (Exito) o 1 (fracaso)'),
-                  'mensaje' => new external_value(PARAM_TEXT, 'Breve descripción del resultado'),
+                  'status' => new external_value(PARAM_TEXT, '0 (Exito) o 1 (fracaso)'),
+                  'message' => new external_value(PARAM_TEXT, 'Breve descripción del resultado'),
                   'username' => new external_value(PARAM_TEXT, 'Carné universitario del estudiante'),
                   'enrolments' => new external_multiple_structure(
                       new external_single_structure(
                           array(
                             'courseid' => new external_value(PARAM_TEXT, 'Número ID de un curso en moodle'),
-                            'status' => new external_value(PARAM_INT, 'Estado del estudiante dentro del curso: 0 (activo), 1 (suspendido), 2 (error, revisar mensaje)'),
-                            'mensaje' => new external_value(PARAM_TEXT, 'Descripción del resultado de matriculación')
+                            'status' => new external_value(PARAM_INT, 'Estado del estudiante dentro del curso: 0 (activo), 1 (suspendido), 2 (error, revisar message)'),
+                            'message' => new external_value(PARAM_TEXT, 'Descripción del resultado de matriculación')
                           )
                       )
                   )
