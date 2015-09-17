@@ -23,6 +23,28 @@
 require_once($CFG->libdir . "/externallib.php");
 
 class local_ccie_external extends external_api {
+
+    public static function get_enrolperiod(){
+      $today = time();
+      $today = make_timestamp(date('Y', $today), date('m', $today), date('d', $today), 0, 0, 0);
+      if ($today<=strtotime('June 15')){
+        // 1 semestre -  31 julio
+        // 1 vacaciones - 31 julio
+        $timeend=strtotime("July 31");
+      } else if ($today>=strtotime('June 16') and $today<=strtotime('December 15')){
+        // 2 semestre - 31 Enero próximo año
+        // 2 vacaciones - 31 enero próximo año
+        $january31=strtotime("January 31");
+        $timeend=strtotime("+1 year", $january31);
+      } else {
+        // December 16 and December 31
+        // 1 semestre -  31 julio próximo año
+        // 1 vacaciones - 31 julio próximo año
+        $july31=strtotime("July 31");
+        $timeend=strtotime("+1 year", $july31);
+      }
+      return array('timestart'=>$today, 'timeend'=>$timeend);
+    }
     public static function log_action($action, $message = "", $logfile = "/var/www/html/campus/debug.log") {
         $new = file_exists($logfile) ? false : true;
         $handle = fopen($logfile, 'a');
@@ -53,9 +75,7 @@ class local_ccie_external extends external_api {
                   'enrolments' => new external_multiple_structure(
                           new external_single_structure(
                                   array(
-                                      'idnumber' => new external_value(PARAM_TEXT, 'Número ID de un curso en moodle'),
-                                      'timestart' => new external_value(PARAM_INT, 'Timestamp when the enrolment start', VALUE_OPTIONAL),
-                                      'timeend' => new external_value(PARAM_INT, 'Timestamp when the enrolment end', VALUE_OPTIONAL)
+                                      'idnumber' => new external_value(PARAM_TEXT, 'Número ID de un curso en moodle')
                                   )
                           ), 'Option names:
                                   * groupid (integer) return only users in this group id. Requires \'moodle/site:accessallgroups\' .
@@ -103,6 +123,7 @@ class local_ccie_external extends external_api {
      */
     public static function matricular($username, $firstname, $lastname, $email, $roleid = 5, $enrolments) {
       global $DB, $CFG;
+      static::get_enrolperiod();
 
       require_once($CFG->libdir . '/enrollib.php');
       require_once($CFG->dirroot . '/user/lib.php');
@@ -159,8 +180,6 @@ class local_ccie_external extends external_api {
       $enrolments = array();
       foreach ($params['enrolments'] as $enrolment) {
         $idnumber = $enrolment['idnumber'];
-        $timestart = $enrolment['timestart'];
-        $timeend = $enrolment['timeend'];
         // Ensure the current user is allowed to run this function in the enrolment context.
         $courseid = $DB->get_record('course', array('idnumber'=>$idnumber), 'id', MUST_EXIST);
         $courseid = $courseid->id;
@@ -210,7 +229,7 @@ class local_ccie_external extends external_api {
           if ($user_enrolments->status == ENROL_USER_SUSPENDED){
             // TODO test
             $record = new stdclass;
-            $record->id = $user_enrolments['id'];
+            $record->id = $user_enrolments->id;
             $record->status = ENROL_USER_ACTIVE;
             $DB->update_record('user_enrolments', $record);
             $enrolments[] = array('courseid'=>$idnumber, 'status' => 0, 'message'=>"Usuario ${username} activo en ${idnumber} con &eacute;xito");
@@ -218,11 +237,9 @@ class local_ccie_external extends external_api {
           }
         }
         // Finally proceed the enrolment.
-        $params['timestart'] = isset($params['timestart']) ? $params['timestart'] : 0;
-        $params['timeend'] = isset($params['timeend']) ? $params['timeend'] : 0;
-
+        $times = static::get_enrolperiod();
         $enrol->enrol_user($instance, $user->id, $roleid,
-                $params['timestart'], $params['timeend'], ENROL_USER_ACTIVE);
+                $times['timestart'], $times['timeend'], ENROL_USER_ACTIVE);
 
         $enrolments[] = array('courseid'=>$idnumber, 'status' => 0, 'message'=>"Usuario ${username} matriculado en ${idnumber} con &eacute;xito");
       }
