@@ -43,7 +43,6 @@ $functions = array(
                 'methodname'  => 'desmatricular',
                 'classpath'   => 'local/ccie/externallib.php',
                 'description' => 'CCIE desmatricular usuarios',
-                'capabilities'=> 'enrol/manual:enrol',
                 'type'        => 'write',
         )
 );

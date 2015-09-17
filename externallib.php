@@ -94,7 +94,7 @@ class local_ccie_external extends external_api {
      */
     public static function desmatricular_parameters() {
         return new external_function_parameters(
-                array('welcomemessage' => new external_value(PARAM_TEXT, 'The welcome message. By default it is "Hello world,"', VALUE_DEFAULT, 'Hello world, '))
+                array('username' => new external_value(PARAM_TEXT, 'Carné universitario'))
         );
     }
     /**
@@ -123,7 +123,6 @@ class local_ccie_external extends external_api {
      */
     public static function matricular($username, $firstname, $lastname, $email, $roleid = 5, $enrolments) {
       global $DB, $CFG;
-      static::get_enrolperiod();
 
       require_once($CFG->libdir . '/enrollib.php');
       require_once($CFG->dirroot . '/user/lib.php');
@@ -145,7 +144,7 @@ class local_ccie_external extends external_api {
                                                            // (except if the DB doesn't support it).
       // Get the user.
       $user = $DB->get_record('user',
-                    array('username' => $params['username'], 'deleted' => 0, 'mnethostid' => $CFG->mnet_localhost_id));
+                    array('username' => $params['username'], 'deleted' => 0, 'mnethostid' => $CFG->mnet_localhost_id), 'id');
 
       if (empty($user)){
         // Make sure that the username doesn't already exist.
@@ -168,15 +167,16 @@ class local_ccie_external extends external_api {
         $newuser->id = user_create_user($newuser, true, true);
         $user = $newuser;
       }
-      $username = $user->username;
+      $username = $params['username'];
 
       // Retrieve the manual enrolment plugin.
       $enrol = enrol_get_plugin('manual');
       if (empty($enrol)) {
-        return array('status'=>2, 'message'=>'Moodle no puede matricular por falta de plugin "manual"', 'username'=>$params['username'], 'enrolments'=>array());
+        return array('status'=>2, 'message'=>'Moodle no puede matricular por falta de plugin "manual"', 'username'=>$username, 'enrolments'=>array());
       }
 
       $roleid = $params['roleid'];
+      $times = static::get_enrolperiod();
       $enrolments = array();
       foreach ($params['enrolments'] as $enrolment) {
         $idnumber = $enrolment['idnumber'];
@@ -222,32 +222,49 @@ class local_ccie_external extends external_api {
         $user_enrolments = $DB->get_record('user_enrolments', array('userid'=>$user->id, 'enrolid'=>$enroleid->id ), 'id, status');
         if (!empty($user_enrolments)){
           if ($user_enrolments->status == ENROL_USER_ACTIVE){
-            // TODO test
             $enrolments[] = array('courseid'=>$idnumber, 'status' => 0, 'message'=>"Usuario ${username} activo en ${idnumber} con &eacute;xito");
-            continue;
-          }
-          if ($user_enrolments->status == ENROL_USER_SUSPENDED){
-            // TODO test
+          } else if ($user_enrolments->status == ENROL_USER_SUSPENDED){
             $record = new stdclass;
             $record->id = $user_enrolments->id;
             $record->status = ENROL_USER_ACTIVE;
             $DB->update_record('user_enrolments', $record);
             $enrolments[] = array('courseid'=>$idnumber, 'status' => 0, 'message'=>"Usuario ${username} activo en ${idnumber} con &eacute;xito");
-            continue;
           }
+          continue;
         }
         // Finally proceed the enrolment.
-        $times = static::get_enrolperiod();
         $enrol->enrol_user($instance, $user->id, $roleid,
                 $times['timestart'], $times['timeend'], ENROL_USER_ACTIVE);
 
         $enrolments[] = array('courseid'=>$idnumber, 'status' => 0, 'message'=>"Usuario ${username} matriculado en ${idnumber} con &eacute;xito");
       }
       $transaction->allow_commit();
-      return array('status'=>0, 'message'=>'Matriculaci&oacute;n exitosa', 'username'=>$user->username, 'enrolments'=>$enrolments);
+      return array('status'=>0, 'message'=>'Matriculaci&oacute;n exitosa', 'username'=>$username, 'enrolments'=>$enrolments);
     }
-    public static function desmatricular($welcomemessage = 'Hello world, ') {
-      return "hola";
+    public static function desmatricular($username) {
+      global $DB, $CFG;
+
+      $params = self::validate_parameters(self::desmatricular_parameters(),
+              array('username' => $username));
+      $transaction = $DB->start_delegated_transaction(); // Rollback all enrolment if an error occurs
+                                                           // (except if the DB doesn't support it).
+      // Get the user.
+      $user = $DB->get_record('user',
+                    array('username' => $params['username'], 'deleted' => 0, 'mnethostid' => $CFG->mnet_localhost_id), 'id');
+
+      if (empty($user)){
+        return array('status'=>1, 'message'=>"Usuario ${params['username']} no existe", 'username'=>$params['username']);
+      }
+      $user_enrolments = $DB->get_recordset('user_enrolments',
+                    array('userid' => $user->id, 'status'=>ENROL_USER_ACTIVE),'', 'id');
+      $record = new stdclass;
+      $record->status = ENROL_USER_SUSPENDED;
+      foreach ($user_enrolments as $user_enrolment){
+        $record->id = $user_enrolment->id;
+        $DB->update_record('user_enrolments', $record);
+      }
+      $transaction->allow_commit();
+      return array('status'=>0, 'message'=>'Desmatriculaci&oacute;n exitosa', 'username'=>$params['username']);
     }
     /**
      * Returns welcome message
@@ -302,7 +319,13 @@ class local_ccie_external extends external_api {
      * @return external_description
      */
     public static function desmatricular_returns() {
-        return new external_value(PARAM_TEXT, 'The welcome message + user first name');
+        return new external_single_structure(
+                array(
+                    'status' => new external_value(PARAM_TEXT, '0 (Exito) o 1 (fracaso)'),
+                    'message' => new external_value(PARAM_TEXT, 'Breve descripción del resultado'),
+                    'username' => new external_value(PARAM_TEXT, 'Carné universitario del estudiante')
+                )
+            );
     }
     /**
      * Returns description of method result value
