@@ -99,6 +99,18 @@ class local_ccie_external extends external_api {
     }
     /**
      * Returns description of method parameters
+     *
+     * @return external_function_parameters
+     * @since Moodle 2.3
+     */
+    public static function get_cursos_parameters() {
+        return new external_function_parameters(
+                array(
+                )
+        );
+    }
+    /**
+     * Returns description of method parameters
      * @return external_function_parameters
      */
     public static function hello_world_parameters() {
@@ -266,6 +278,48 @@ class local_ccie_external extends external_api {
       $transaction->allow_commit();
       return array('status'=>0, 'message'=>'Desmatriculaci&oacute;n exitosa', 'username'=>$params['username']);
     }
+    public static function get_cursos(){
+      global $CFG, $DB;
+      require_once($CFG->dirroot . "/course/lib.php");
+
+      $courses = $DB->get_recordset_select('course',
+                    'visible=? and id>?', array(1,1),'fullname ASC', 'id, fullname, shortname, idnumber, format');
+      //create return value
+      $coursesinfo = array();
+      foreach ($courses as $course) {
+
+          // now security checks
+          $context = context_course::instance($course->id, IGNORE_MISSING);
+          $courseformatoptions = course_get_format($course)->get_format_options();
+          try {
+              self::validate_context($context);
+          } catch (Exception $e) {
+              $exceptionparam = new stdClass();
+              $exceptionparam->message = $e->getMessage();
+              $exceptionparam->courseid = $course->id;
+              throw new moodle_exception('errorcoursecontextnotvalid', 'webservice', '', $exceptionparam);
+          }
+          require_capability('moodle/course:view', $context);
+
+          $courseinfo = array();
+          $courseinfo['fullname'] = htmlentities($course->fullname, ENT_COMPAT | ENT_HTML5, "UTF-8");
+          static::log_action('fullname',$courseinfo['fullname']);
+          $courseinfo['shortname'] = $course->shortname;
+
+          //some field should be returned only if the user has update permission
+          $courseadmin = has_capability('moodle/course:update', $context);
+          if ($courseadmin) {
+              $courseinfo['idnumber'] = $course->idnumber;
+          }
+
+          if ($courseadmin or $course->visible
+                  or has_capability('moodle/course:viewhiddencourses', $context)) {
+              $coursesinfo[] = $courseinfo;
+          }
+      }
+
+      return array('cursos'=>$coursesinfo);
+    }
     /**
      * Returns welcome message
      * @return string welcome message
@@ -326,6 +380,27 @@ class local_ccie_external extends external_api {
                     'username' => new external_value(PARAM_TEXT, 'Carné universitario del estudiante')
                 )
             );
+    }
+    /**
+     * Returns description of method result value
+     *
+     * @return external_description
+     * @since Moodle 2.2
+     */
+    public static function get_cursos_returns() {
+      return new external_single_structure(
+              array(
+                  'cursos' => new external_multiple_structure(
+                    new external_single_structure(
+                            array(
+                                'shortname' => new external_value(PARAM_TEXT, 'course short name'),
+                                'fullname' => new external_value(PARAM_TEXT, 'full name'),
+                                'idnumber' => new external_value(PARAM_RAW, 'id number', VALUE_OPTIONAL),
+                            ), 'curso'
+                    )
+                  )
+              )
+          );
     }
     /**
      * Returns description of method result value

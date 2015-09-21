@@ -28,7 +28,7 @@ $functions = array(
                 'methodname'  => 'hello_world',
                 'classpath'   => 'local/ccie/externallib.php',
                 'description' => 'Return Hello World FIRSTNAME. Can change the text (Hello World) sending a new text as parameter',
-                'type'        => 'read',
+                'type'        => 'read'
         ),
         'local_ccie_matricular' => array(
                 'classname'   => 'local_ccie_external',
@@ -36,21 +36,29 @@ $functions = array(
                 'classpath'   => 'local/ccie/externallib.php',
                 'description' => 'CCIE matricular usuarios',
                 'capabilities'=> 'moodle/user:create, enrol/manual:enrol',
-                'type'        => 'write',
+                'type'        => 'write'
         ),
         'local_ccie_desmatricular' => array(
                 'classname'   => 'local_ccie_external',
                 'methodname'  => 'desmatricular',
                 'classpath'   => 'local/ccie/externallib.php',
                 'description' => 'CCIE desmatricular usuarios',
-                'type'        => 'write',
+                'type'        => 'write'
+        ),
+        'local_ccie_get_cursos' => array(
+            'classname'   => 'local_ccie_external',
+            'methodname'  => 'get_cursos',
+            'classpath'   => 'local/ccie/externallib.php',
+            'description' => 'Return course details',
+            'type'        => 'read',
+            'capabilities'=> 'moodle/course:view,moodle/course:update,moodle/course:viewhiddencourses'
         )
 );
 
 // We define the services to install as pre-build services. A pre-build service is not editable by administrator.
 $services = array(
         'Web Service CCIE' => array(
-                'functions' => array ('local_ccie_hello_world', 'local_ccie_matricular', 'local_ccie_desmatricular'),
+                'functions' => array ('local_ccie_hello_world', 'local_ccie_matricular', 'local_ccie_desmatricular', 'local_ccie_get_cursos'),
                 'restrictedusers' => 0,
                 'enabled'=>1,
         )
