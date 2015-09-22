@@ -72,18 +72,8 @@ class local_ccie_external extends external_api {
                   'lastname' => new external_value(PARAM_TEXT, 'Apellido del usuario'),
                   'email' => new external_value(PARAM_TEXT, 'Correo electrónico del usuario'),
                   'roleid' => new external_value(PARAM_INT, 'Role que tiene el usuario con el curso. Valores: 3 (editingteacher), 4 (teacher), 5 (student)', VALUE_REQUIRED, VALUE_DEFAULT, 5),
-                  'enrolments' => new external_multiple_structure(
-                          new external_single_structure(
-                                  array(
-                                      'idnumber' => new external_value(PARAM_TEXT, 'Número ID de un curso en moodle')
-                                  )
-                          ), 'Option names:
-                                  * groupid (integer) return only users in this group id. Requires \'moodle/site:accessallgroups\' .
-                                  * onlyactive (integer) only users with active enrolments. Requires \'moodle/course:enrolreview\' .
-                                  * userfields (\'string, string, ...\') return only the values of these user fields.
-                                  * limitfrom (integer) sql limit from.
-                                  * limitnumber (integer) max number of users per course and capability.', VALUE_DEFAULT, array()
-
+                  'idnumbers' => new external_multiple_structure(
+                          new external_value(PARAM_RAW, 'Número ID del curso', VALUE_REQUIRED)
                   )
                 )
         );
@@ -127,13 +117,10 @@ class local_ccie_external extends external_api {
      * @param String $lastname Apellidos
      * @param String $email Correo electronico @ingenieria.usac.edu.gt
      * @param Int $roleid 3 (editingteacher), 4 (teacher), 5 (student)
-     * @param array $enrolments Un array de cursos a matricular. El esquema es:
-     *  String $idnumber Número ID del curso
-     *  Int $timestart Timestamp when the enrolment start
-     *  Int $timeend Timestamp when the enrolment end
+     * @param array $idnumbers Un array de número ID del curso, de cursos a matricular.
      * @since Moodle 2.8
      */
-    public static function matricular($username, $firstname, $lastname, $email, $roleid = 5, $enrolments) {
+    public static function matricular($username, $firstname, $lastname, $email, $roleid = 5, $idnumbers) {
       global $DB, $CFG;
 
       require_once($CFG->libdir . '/enrollib.php');
@@ -145,7 +132,7 @@ class local_ccie_external extends external_api {
               'lastname' => $lastname,
               'email' => $email,
               'roleid' => $roleid,
-              'enrolments' => $enrolments
+              'idnumbers' => $idnumbers
             ));
 
       // Ensure the current user is allowed to run this function.
@@ -190,8 +177,7 @@ class local_ccie_external extends external_api {
       $roleid = $params['roleid'];
       $times = static::get_enrolperiod();
       $enrolments = array();
-      foreach ($params['enrolments'] as $enrolment) {
-        $idnumber = $enrolment['idnumber'];
+      foreach ($params['idnumbers'] as $idnumber) {
         // Ensure the current user is allowed to run this function in the enrolment context.
         $courseid = $DB->get_record('course', array('idnumber'=>$idnumber), 'id', MUST_EXIST);
         $courseid = $courseid->id;
