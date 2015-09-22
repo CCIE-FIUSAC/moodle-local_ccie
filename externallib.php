@@ -45,19 +45,6 @@ class local_ccie_external extends external_api {
       }
       return array('timestart'=>$today, 'timeend'=>$timeend);
     }
-    public static function log_action($action, $message = "", $logfile = "/var/www/html/campus/debug.log") {
-        $new = file_exists($logfile) ? false : true;
-        $handle = fopen($logfile, 'a');
-        if ($handle) { // append
-            $timestamp = strftime("%Y-%m-%d %H:%M:%S", time());
-            $content = "{$timestamp} | {$action}: {$message}\n";
-            fwrite($handle, $content);
-            fclose($handle);
-            if ($new) {
-                chmod($logfile, 0755);
-            }
-        }
-    }
     /**
      * Returns description of method parameters.
      *
@@ -288,8 +275,7 @@ class local_ccie_external extends external_api {
           require_capability('moodle/course:view', $context);
 
           $courseinfo = array();
-          $courseinfo['fullname'] = htmlentities($course->fullname, ENT_COMPAT | ENT_HTML5, "UTF-8");
-          static::log_action('fullname',$courseinfo['fullname']);
+          $courseinfo['fullname'] = htmlentities($course->fullname, ENT_COMPAT | ENT_HTML5, 'UTF-8');
           $courseinfo['shortname'] = $course->shortname;
 
           //some field should be returned only if the user has update permission
@@ -328,7 +314,6 @@ class local_ccie_external extends external_api {
         if (!has_capability('moodle/user:viewdetails', $context)) {
             throw new moodle_exception('cannotviewprofile');
         }
-        static::log_action("welcomemessage",$params['welcomemessage']);
         return $params['welcomemessage'] . $USER->firstname ;
     }
 
@@ -379,8 +364,8 @@ class local_ccie_external extends external_api {
                   'cursos' => new external_multiple_structure(
                     new external_single_structure(
                             array(
-                                'shortname' => new external_value(PARAM_TEXT, 'course short name'),
                                 'fullname' => new external_value(PARAM_TEXT, 'full name'),
+                                'shortname' => new external_value(PARAM_TEXT, 'course short name'),
                                 'idnumber' => new external_value(PARAM_RAW, 'id number', VALUE_OPTIONAL),
                             ), 'curso'
                     )
