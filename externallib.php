@@ -296,7 +296,7 @@ class local_ccie_external extends external_api {
           require_capability('moodle/course:view', $context);
 
           $courseinfo = array();
-          $courseinfo['fullname'] = htmlentities($course->fullname, ENT_COMPAT | ENT_HTML5, 'UTF-8');
+          $courseinfo['fullname'] = $course->fullname;
           $courseinfo['shortname'] = $course->shortname;
 
           //some field should be returned only if the user has update permission
