@@ -83,6 +83,7 @@ class local_ccie_external extends external_api {
     public static function get_cursos_parameters() {
         return new external_function_parameters(
                 array(
+                  'username' => new external_value(PARAM_TEXT, 'Carné universitario', VALUE_OPTIONAL)
                 )
         );
     }
@@ -251,9 +252,29 @@ class local_ccie_external extends external_api {
       $transaction->allow_commit();
       return array('statusCode'=>0, 'message'=>'Desmatriculaci&oacute;n exitosa', 'username'=>$params['username']);
     }
-    public static function get_cursos(){
+    public static function get_cursos($username){
       global $CFG, $DB;
-      require_once($CFG->dirroot . "/course/lib.php");
+      require_once($CFG->dirroot . '/course/lib.php');
+      require_once($CFG->libdir . '/enrollib.php');
+
+      $params = self::validate_parameters(self::get_cursos_parameters(),
+              array('username' => $username));
+
+      if (empty($params['username'])){
+        $userid = null;
+      } else {
+        // buscar el usuario con username
+        $user = $DB->get_record('user',
+                      array('username' => $params['username'], 'deleted' => 0, 'mnethostid' => $CFG->mnet_localhost_id), 'id');
+
+        if (empty($user)){
+          // usuario no registrado
+          $userid = null;
+        } else {
+          // usuario encontrado
+          $userid = $user->id;
+        }
+      }
 
       $courses = $DB->get_recordset_select('course',
                     'visible=? and id>?', array(1,1),'fullname ASC', 'id, fullname, shortname, idnumber, format');
@@ -282,6 +303,22 @@ class local_ccie_external extends external_api {
           $courseadmin = has_capability('moodle/course:update', $context);
           if ($courseadmin) {
               $courseinfo['idnumber'] = $course->idnumber;
+          }
+          if (empty($userid)){
+            $courseinfo['matriculado'] = ENROL_USER_SUSPENDED;
+          } else {
+            // Buscar el id de la modalidad de matriculacion del curso $course->id
+            $enrol = $DB->get_record('enrol',
+                          array('status' => ENROL_INSTANCE_ENABLED, 'courseid' => $course->id), 'id');
+            // Buscar el usuario matriculado con status ACTIVE
+            $user_enrolments = $DB->get_record('user_enrolments',
+                          array('enrolid'=>$enrol->id, 'userid' => $userid, 'status'=>ENROL_USER_ACTIVE),'status');
+            if (empty($user_enrolments)){
+              // Usuario no esta matriculado, porque no esta en la tabla user_enrolments o tiene status SUSPENDED
+              $courseinfo['matriculado'] = ENROL_USER_SUSPENDED;
+            } else {
+              $courseinfo['matriculado'] = ENROL_USER_ACTIVE;
+            }
           }
 
           if ($courseadmin or $course->visible
@@ -367,6 +404,7 @@ class local_ccie_external extends external_api {
                                 'fullname' => new external_value(PARAM_TEXT, 'full name'),
                                 'shortname' => new external_value(PARAM_TEXT, 'course short name'),
                                 'idnumber' => new external_value(PARAM_RAW, 'id number', VALUE_OPTIONAL),
+                                'matriculado' => new external_value(PARAM_INT, 'Si se ha especificado el usuario, el valor es 0 (si esta matriculado), 1 (si no participa, no existe el usuario, o no enviaste el username)', VALUE_OPTIONAL),
                             ), 'curso'
                     )
                   )
