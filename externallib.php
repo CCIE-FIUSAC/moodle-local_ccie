@@ -140,7 +140,7 @@ class local_ccie_external extends external_api {
       if (empty($user)){
         // Make sure that the username doesn't already exist.
         if ($DB->record_exists('user', array('email' => $params['email'], 'mnethostid' => $CFG->mnet_localhost_id))) {
-            return array('statusCode'=>1, 'message'=>"Email ${params['email']} ya existe", 'username'=>$params['username'], 'enrolments'=>array());
+            return array('statusCode'=>1, 'message'=>"EMAIL ${params['email']} YA EXISTE", 'username'=>$params['username'], 'enrolments'=>array());
         }
         // Create user account
         $newuser = new stdClass();
@@ -163,7 +163,7 @@ class local_ccie_external extends external_api {
       // Retrieve the manual enrolment plugin.
       $enrol = enrol_get_plugin('manual');
       if (empty($enrol)) {
-        return array('statusCode'=>2, 'message'=>'Moodle no puede matricular por falta de plugin "manual"', 'username'=>$username, 'enrolments'=>array());
+        return array('statusCode'=>2, 'message'=>'MOODLE NO PUEDE MATRICULAR POR FALTA DE PLUGIN "manual"', 'username'=>$username, 'enrolments'=>array());
       }
 
       $roleid = $params['roleid'];
@@ -183,7 +183,7 @@ class local_ccie_external extends external_api {
         $roles = get_assignable_roles($context);
 
         if (!array_key_exists($roleid, $roles)) {
-            $enrolments[] = array('statusCode' => 2, 'message'=>"El usuario ${username} no puede matricularse en el curso ${courseid} con role ${roleid}", 'courseid'=>$idnumber);
+            $enrolments[] = array('statusCode' => 2, 'message'=>"EL USUARIO ${username} NO PUEDE MATRICULARSE EN EL CURSO ${courseid} CON ROLE ${roleid}", 'courseid'=>$idnumber);
             continue;
         }
 
@@ -197,13 +197,13 @@ class local_ccie_external extends external_api {
           }
         }
         if (empty($instance)) {
-          $enrolments[] = array('statusCode' => 2, 'message'=>"El usuario ${username} no puede matricularse en el curso ${courseid} por falta de plugin \"manual\"", 'courseid'=>$idnumber);
+          $enrolments[] = array('statusCode' => 2, 'message'=>"EL USUARIO ${username} NO PUEDE MATRICULARSE EN EL CURSO ${courseid} POR FALTA DE PLUGIN \"manual\"", 'courseid'=>$idnumber);
           continue;
         }
 
         // Check that the plugin accept enrolment
         if (!$enrol->allow_enrol($instance)) {
-            $enrolments[] = array('statusCode' => 2, 'message'=>"El usuario ${username} no puede matricularse en el curso ${courseid} con role ${roleid}. Plugin no permite matriculación", 'courseid'=>$idnumber);
+            $enrolments[] = array('statusCode' => 2, 'message'=>"EL USUARIO ${username} NO PUEDE MATRICULARSE EN EL CURSO ${courseid} CON ROLE ${roleid}. PLUGIN NO PERMITE MATRICULACIÓN", 'courseid'=>$idnumber);
             continue;
         }
 
@@ -212,13 +212,13 @@ class local_ccie_external extends external_api {
         $user_enrolments = $DB->get_record('user_enrolments', array('userid'=>$user->id, 'enrolid'=>$enroleid->id ), 'id, status');
         if (!empty($user_enrolments)){
           if ($user_enrolments->status == ENROL_USER_ACTIVE){
-            $enrolments[] = array('statusCode' => 0, 'message'=>"Usuario ${username} activo en ${idnumber} con &eacute;xito", 'courseid'=>$idnumber);
+            $enrolments[] = array('statusCode' => 0, 'message'=>"USUARIO ${username} ACTIVO EN ${idnumber} CON EXITO", 'courseid'=>$idnumber);
           } else if ($user_enrolments->status == ENROL_USER_SUSPENDED){
             $record = new stdclass;
             $record->id = $user_enrolments->id;
             $record->status = ENROL_USER_ACTIVE;
             $DB->update_record('user_enrolments', $record);
-            $enrolments[] = array('statusCode' => 0, 'message'=>"Usuario ${username} activo en ${idnumber} con &eacute;xito", 'courseid'=>$idnumber);
+            $enrolments[] = array('statusCode' => 0, 'message'=>"USUARIO ${username} ACTIVO EN ${idnumber} CON EXITO", 'courseid'=>$idnumber);
           }
           continue;
         }
@@ -226,10 +226,10 @@ class local_ccie_external extends external_api {
         $enrol->enrol_user($instance, $user->id, $roleid,
                 $times['timestart'], $times['timeend'], ENROL_USER_ACTIVE);
 
-        $enrolments[] = array('statusCode' => 0, 'message'=>"Usuario ${username} matriculado en ${idnumber} con &eacute;xito", 'courseid'=>$idnumber);
+        $enrolments[] = array('statusCode' => 0, 'message'=>"USUARIO ${username} MATRICULADO EN ${idnumber} CON EXITO", 'courseid'=>$idnumber);
       }
       $transaction->allow_commit();
-      return array('statusCode'=>0, 'message'=>'Matriculaci&oacute;n exitosa', 'username'=>$username, 'enrolments'=>$enrolments);
+      return array('statusCode'=>0, 'message'=>'MATRICULACION EXITOSA', 'username'=>$username, 'enrolments'=>$enrolments);
     }
     public static function desmatricular($username, $idnumbers = array()) {
       global $DB, $CFG;
@@ -243,7 +243,7 @@ class local_ccie_external extends external_api {
                     array('username' => $params['username'], 'deleted' => 0, 'mnethostid' => $CFG->mnet_localhost_id), 'id');
 
       if (empty($user)){
-        return array('statusCode'=>1, 'message'=>"Usuario ${params['username']} no existe", 'username'=>$params['username']);
+        return array('statusCode'=>1, 'message'=>"USUARIO ${params['username']} NO EXISTE", 'username'=>$params['username']);
       }
       $record = new stdclass;
       $record->status = ENROL_USER_SUSPENDED;
@@ -270,7 +270,7 @@ class local_ccie_external extends external_api {
         }
       }
       $transaction->allow_commit();
-      return array('statusCode'=>0, 'message'=>'Desmatriculaci&oacute;n exitosa', 'username'=>$params['username']);
+      return array('statusCode'=>0, 'message'=>'DESMATRICULACION EXITOSA', 'username'=>$params['username']);
     }
     public static function get_cursos($username){
       global $CFG, $DB;
