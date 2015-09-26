@@ -15,9 +15,9 @@
  */
 
 /// SETUP - NEED TO BE CHANGED
-$token = '7b1e0ddaeeb967091ffaf49c36712d22';
+$token = 'e622cce6de706968aca0ded534eebcfc';
 $domainname = 'http://elearning.ingenieria.usac.edu.gt/campus';
-$functionname = 'local_ccie_matricular';
+$functionname = 'local_ccie_get_cursos';
 
 // REST RETURNED VALUES FORMAT
 $restformat = 'json'; //Also possible in Moodle 2.2 and later: 'json'
@@ -26,13 +26,7 @@ $restformat = 'json'; //Also possible in Moodle 2.2 and later: 'json'
 //////// moodle_user_create_users ////////
 
 /// PARAMETERS - NEED TO BE CHANGED IF YOU CALL A DIFFERENT FUNCTION
-$params = array('username' => '200123459',
-'firstname' => 'Juanfer',
-'lastname' => 'Velz',
-'email' => '200123459@ingenieria.usac.edu.gt',
-'roleid' => 5,
-'idnumbers' => array('0009A','0006A')
-));
+$params = array();
 
 /// REST CALL
 header('Content-Type: text/plain');
@@ -41,5 +35,5 @@ require_once('./curl.php');
 $curl = new curl;
 //if rest format == 'xml', then we do not add the param for backward compatibility with Moodle < 2.2
 $restformat = ($restformat == 'json')?'&moodlewsrestformat=' . $restformat:'';
-$resp = $curl->post($serverurl . $restformat, $params);
+$resp = $curl->post($serverurl . $restformat);
 print_r($resp);
