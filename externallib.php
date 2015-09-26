@@ -24,7 +24,7 @@ require_once($CFG->libdir . "/externallib.php");
 
 class local_ccie_external extends external_api {
 
-    public static function get_enrolperiod(){
+    protected static function get_enrolperiod(){
       $today = time();
       $today = make_timestamp(date('Y', $today), date('m', $today), date('d', $today), 0, 0, 0);
       if ($today<=strtotime('June 15')){
