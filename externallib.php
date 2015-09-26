@@ -331,9 +331,9 @@ class local_ccie_external extends external_api {
             $enrol = $DB->get_record('enrol',
                           array('status' => ENROL_INSTANCE_ENABLED, 'courseid' => $course->id, 'enrol'=>'manual'), 'id');
             // Buscar el usuario matriculado con status ACTIVE
-            $user_enrolments = $DB->get_record('user_enrolments',
-                          array('userid' => $userid, 'enrolid'=>$enrol->id, 'status'=>ENROL_USER_ACTIVE),'status');
-            if (empty($user_enrolments)){
+            $matriculado = $DB->record_exists('user_enrolments',
+                          array('userid' => $userid, 'enrolid'=>$enrol->id, 'status'=>ENROL_USER_ACTIVE));
+            if ($matriculado){
               // Usuario no esta matriculado, porque no esta en la tabla user_enrolments o tiene status SUSPENDED
               $courseinfo['matriculado'] = ENROL_USER_SUSPENDED;
             } else {
