@@ -329,7 +329,7 @@ class local_ccie_external extends external_api {
           } else {
             // Buscar el id de la modalidad de matriculacion del curso $course->id
             $enrol = $DB->get_record('enrol',
-                          array('status' => ENROL_INSTANCE_ENABLED, 'courseid' => $course->id), 'id');
+                          array('status' => ENROL_INSTANCE_ENABLED, 'courseid' => $course->id, 'enrol'=>'manual'), 'id');
             // Buscar el usuario matriculado con status ACTIVE
             $user_enrolments = $DB->get_record('user_enrolments',
                           array('userid' => $userid, 'enrolid'=>$enrol->id, 'status'=>ENROL_USER_ACTIVE),'status');
