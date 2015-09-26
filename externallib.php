@@ -243,7 +243,7 @@ class local_ccie_external extends external_api {
                     array('username' => $params['username'], 'deleted' => 0, 'mnethostid' => $CFG->mnet_localhost_id), 'id');
 
       if (empty($user)){
-        return array('statusCode'=>1, 'message'=>"USUARIO ${params['username']} NO EXISTE", 'username'=>$params['username']);
+        return array('statusCode'=>0, 'message'=>"USUARIO ${params['username']} NO EXISTE", 'username'=>$params['username']);
       }
       $record = new stdclass;
       $record->status = ENROL_USER_SUSPENDED;
