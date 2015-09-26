@@ -261,6 +261,10 @@ class local_ccie_external extends external_api {
           $course = $DB->get_record('course', array('idnumber'=>$idnumber), 'id', MUST_EXIST);
           $enrol = $DB->get_record('enrol', array('courseid'=>$course->id, 'enrol'=>'manual'), 'id');
           $user_enrolment = $DB->get_record('user_enrolments', array('userid'=>$user->id, 'enrolid'=>$enrol->id ), 'id, status');
+          if (empty($user_enrolment)){
+            // userid non existent in user_enrolments
+            continue;
+          }
           $record->id = $user_enrolment->id;
           $DB->update_record('user_enrolments', $record);
         }
