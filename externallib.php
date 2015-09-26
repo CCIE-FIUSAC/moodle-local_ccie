@@ -71,7 +71,10 @@ class local_ccie_external extends external_api {
      */
     public static function desmatricular_parameters() {
         return new external_function_parameters(
-                array('username' => new external_value(PARAM_TEXT, 'Carné universitario'))
+                array('username' => new external_value(PARAM_TEXT, 'Carné universitario')),
+                'idnumbers' => new external_multiple_structure(
+                        new external_value(PARAM_RAW, 'Número ID del curso', VALUE_OPTIONAL)
+                )
         );
     }
     /**
@@ -227,11 +230,11 @@ class local_ccie_external extends external_api {
       $transaction->allow_commit();
       return array('statusCode'=>0, 'message'=>'Matriculaci&oacute;n exitosa', 'username'=>$username, 'enrolments'=>$enrolments);
     }
-    public static function desmatricular($username) {
+    public static function desmatricular($username, $idnumbers) {
       global $DB, $CFG;
 
       $params = self::validate_parameters(self::desmatricular_parameters(),
-              array('username' => $username));
+              array('username' => $username, 'idnumbers' => idnumbers));
       $transaction = $DB->start_delegated_transaction(); // Rollback all enrolment if an error occurs
                                                            // (except if the DB doesn't support it).
       // Get the user.
@@ -241,13 +244,24 @@ class local_ccie_external extends external_api {
       if (empty($user)){
         return array('statusCode'=>1, 'message'=>"Usuario ${params['username']} no existe", 'username'=>$params['username']);
       }
-      $user_enrolments = $DB->get_recordset('user_enrolments',
-                    array('userid' => $user->id, 'status'=>ENROL_USER_ACTIVE),'', 'id');
       $record = new stdclass;
       $record->status = ENROL_USER_SUSPENDED;
+      if (empty($params['idnumbers'])){
+      $user_enrolments = $DB->get_recordset('user_enrolments',
+                    array('userid' => $user->id, 'status'=>ENROL_USER_ACTIVE),'', 'id');
+
       foreach ($user_enrolments as $user_enrolment){
         $record->id = $user_enrolment->id;
         $DB->update_record('user_enrolments', $record);
+      }
+      } else {
+        foreach($idnumbers as $idnumber){
+          $course = $DB->get_record('course', array('idnumber'=>$idnumber), 'id', MUST_EXIST);
+          $enrol = $DB->get_record('enrol', array('courseid'=>$course->id, 'enrol'=>'manual'), 'id');
+          $user_enrolment = $DB->get_record('user_enrolments', array('userid'=>$user->id, 'enrolid'=>$enrol->id ), 'id, status');
+          $record->id = $user_enrolment->id;
+          $DB->update_record('user_enrolments', $record);
+        }
       }
       $transaction->allow_commit();
       return array('statusCode'=>0, 'message'=>'Desmatriculaci&oacute;n exitosa', 'username'=>$params['username']);
