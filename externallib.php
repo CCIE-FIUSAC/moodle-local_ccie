@@ -71,9 +71,10 @@ class local_ccie_external extends external_api {
      */
     public static function desmatricular_parameters() {
         return new external_function_parameters(
-                array('username' => new external_value(PARAM_TEXT, 'Carné universitario')),
-                'idnumbers' => new external_multiple_structure(
-                        new external_value(PARAM_RAW, 'Número ID del curso', VALUE_OPTIONAL)
+                array('username' => new external_value(PARAM_TEXT, 'Carné universitario'),
+                  'idnumbers' => new external_multiple_structure(
+                          new external_value(PARAM_RAW, 'Número ID del curso')
+                  , 'Array donde cada elemento es un ID Number que representa el curso en moodle', VALUE_OPTIONAL)
                 )
         );
     }
@@ -230,11 +231,11 @@ class local_ccie_external extends external_api {
       $transaction->allow_commit();
       return array('statusCode'=>0, 'message'=>'Matriculaci&oacute;n exitosa', 'username'=>$username, 'enrolments'=>$enrolments);
     }
-    public static function desmatricular($username, $idnumbers) {
+    public static function desmatricular($username, $idnumbers = array()) {
       global $DB, $CFG;
 
       $params = self::validate_parameters(self::desmatricular_parameters(),
-              array('username' => $username, 'idnumbers' => idnumbers));
+              array('username' => $username, 'idnumbers' => $idnumbers));
       $transaction = $DB->start_delegated_transaction(); // Rollback all enrolment if an error occurs
                                                            // (except if the DB doesn't support it).
       // Get the user.
@@ -255,6 +256,7 @@ class local_ccie_external extends external_api {
           $DB->update_record('user_enrolments', $record);
         }
       } else {
+        $idnumbers = $params['idnumbers'];
         foreach($idnumbers as $idnumber){
           $course = $DB->get_record('course', array('idnumber'=>$idnumber), 'id', MUST_EXIST);
           $enrol = $DB->get_record('enrol', array('courseid'=>$course->id, 'enrol'=>'manual'), 'id');
@@ -326,7 +328,7 @@ class local_ccie_external extends external_api {
                           array('status' => ENROL_INSTANCE_ENABLED, 'courseid' => $course->id), 'id');
             // Buscar el usuario matriculado con status ACTIVE
             $user_enrolments = $DB->get_record('user_enrolments',
-                          array('enrolid'=>$enrol->id, 'userid' => $userid, 'status'=>ENROL_USER_ACTIVE),'status');
+                          array('userid' => $userid, 'enrolid'=>$enrol->id, 'status'=>ENROL_USER_ACTIVE),'status');
             if (empty($user_enrolments)){
               // Usuario no esta matriculado, porque no esta en la tabla user_enrolments o tiene status SUSPENDED
               $courseinfo['matriculado'] = ENROL_USER_SUSPENDED;
