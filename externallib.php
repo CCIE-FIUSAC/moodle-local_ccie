@@ -247,13 +247,13 @@ class local_ccie_external extends external_api {
       $record = new stdclass;
       $record->status = ENROL_USER_SUSPENDED;
       if (empty($params['idnumbers'])){
-      $user_enrolments = $DB->get_recordset('user_enrolments',
-                    array('userid' => $user->id, 'status'=>ENROL_USER_ACTIVE),'', 'id');
+        $user_enrolments = $DB->get_recordset('user_enrolments',
+                      array('userid' => $user->id, 'status'=>ENROL_USER_ACTIVE),'', 'id');
 
-      foreach ($user_enrolments as $user_enrolment){
-        $record->id = $user_enrolment->id;
-        $DB->update_record('user_enrolments', $record);
-      }
+        foreach ($user_enrolments as $user_enrolment){
+          $record->id = $user_enrolment->id;
+          $DB->update_record('user_enrolments', $record);
+        }
       } else {
         foreach($idnumbers as $idnumber){
           $course = $DB->get_record('course', array('idnumber'=>$idnumber), 'id', MUST_EXIST);
