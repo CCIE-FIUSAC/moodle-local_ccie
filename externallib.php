@@ -335,9 +335,9 @@ class local_ccie_external extends external_api {
                           array('userid' => $userid, 'enrolid'=>$enrol->id, 'status'=>ENROL_USER_ACTIVE));
             if ($matriculado){
               // Usuario no esta matriculado, porque no esta en la tabla user_enrolments o tiene status SUSPENDED
-              $courseinfo['matriculado'] = ENROL_USER_SUSPENDED;
-            } else {
               $courseinfo['matriculado'] = ENROL_USER_ACTIVE;
+            } else {
+              $courseinfo['matriculado'] = ENROL_USER_SUSPENDED;
             }
           }
 
