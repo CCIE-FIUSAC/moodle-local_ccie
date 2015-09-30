@@ -214,10 +214,7 @@ class local_ccie_external extends external_api {
           if ($user_enrolments->status == ENROL_USER_ACTIVE){
             $enrolments[] = array('statusCode' => 0, 'message'=>"USUARIO ${username} ACTIVO EN ${idnumber} CON EXITO", 'courseid'=>$idnumber);
           } else if ($user_enrolments->status == ENROL_USER_SUSPENDED){
-            $record = new stdclass;
-            $record->id = $user_enrolments->id;
-            $record->status = ENROL_USER_ACTIVE;
-            $DB->update_record('user_enrolments', $record);
+            $enrol->update_user_enrol($instance, $user->id, ENROL_USER_ACTIVE);
             $enrolments[] = array('statusCode' => 0, 'message'=>"USUARIO ${username} ACTIVO EN ${idnumber} CON EXITO", 'courseid'=>$idnumber);
           }
           continue;
