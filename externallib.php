@@ -257,11 +257,13 @@ class local_ccie_external extends external_api {
       if (empty($user)){
         return array('statusCode'=>500, 'message'=>"USUARIO ${params['username']} NO EXISTE", 'username'=>$params['username']);
       }
+      $username = $params['username'];
       // Retrieve the manual enrolment plugin.
       $enrol = enrol_get_plugin('manual');
       if (empty($enrol)) {
         return array('statusCode'=>500, 'message'=>'MOODLE NO PUEDE MATRICULAR POR FALTA DE PLUGIN "manual"', 'username'=>$username);
       }
+      $enrolments = array();
       $statusCode = 200;
       if (empty($params['idnumbers'])){
         $user_enrolments = $DB->get_recordset('user_enrolments',
@@ -270,9 +272,13 @@ class local_ccie_external extends external_api {
         foreach ($user_enrolments as $user_enrolment){
           // find courseid using enrolid
           $course = $DB->get_record('enrol', array('id'=>$user_enrolment->enrolid), 'courseid', MUST_EXIST);
+          $courseid = $course->courseid;
+          $course = $DB->get_record('course', array('id'=>$courseid), 'fullname, idnumber', MUST_EXIST);
+          $coursefullname = $course->fullname;
+          $courseidnumber = $course->idnumber;
           // Check manual enrolment plugin instance is enabled/exist.
           $instance = null;
-          $enrolinstances = enrol_get_instances($course->courseid, true);
+          $enrolinstances = enrol_get_instances($courseid, true);
           foreach ($enrolinstances as $courseenrolinstance) {
             if ($courseenrolinstance->enrol == "manual") {
               $instance = $courseenrolinstance;
@@ -280,27 +286,31 @@ class local_ccie_external extends external_api {
             }
           }
           if (empty($instance)) {
+            $enrolments[] = array('statusCode' => 600, 'message'=>"EL USUARIO ${username} NO PUEDE DESMATRICULARSE EN EL CURSO ${coursefullname} POR ESTAR DESHABILITADO.", 'courseid'=>$courseidnumber);
             $statusCode = 600;
             continue;
           }
           // Check that the plugin accept enrolment
           if (!$enrol->allow_enrol($instance)) {
+            $enrolments[] = array('statusCode' => 600, 'message'=>"EL USUARIO ${username} NO PUEDE DESMATRICULARSE EN EL CURSO ${coursefullname} POR ESTAR DESHABILITADO", 'courseid'=>$courseidnumber);
             $statusCode = 600;
             continue;
           }
 
           $enrol->update_user_enrol($instance, $user->id, ENROL_USER_SUSPENDED);
+          $enrolments[] = array('statusCode' => 200, 'message'=>"USUARIO ${username} SUSPENDIDO EN ${courseidnumber} CON EXITO", 'courseid'=>$courseidnumber);
         }
       } else {
         $idnumbers = $params['idnumbers'];
         foreach($idnumbers as $idnumber){
           try{
-            $course = $DB->get_record('course', array('idnumber'=>$idnumber), 'id', MUST_EXIST);
+            $course = $DB->get_record('course', array('idnumber'=>$idnumber), 'id, fullname', MUST_EXIST);
           } catch (dml_exception $e) {
+            $enrolments[] = array('statusCode' => 600, 'message'=>"NO EXISTE EL CURSO ${idnumber}", 'courseid'=>$idnumber);
             $statusCode = 600;
             continue;
           }
-
+          $coursefullname = $course->fullname;
           // Check manual enrolment plugin instance is enabled/exist.
           $instance = null;
           $enrolinstances = enrol_get_instances($course->id, true);
@@ -311,22 +321,25 @@ class local_ccie_external extends external_api {
             }
           }
           if (empty($instance)) {
+            $enrolments[] = array('statusCode' => 600, 'message'=>"EL USUARIO ${username} NO PUEDE DESMATRICULARSE EN EL CURSO ${coursefullname} POR ESTAR DESHABILITADO.", 'courseid'=>$idnumber);
             $statusCode = 600;
             continue;
           }
           // Check that the plugin accept enrolment
           if (!$enrol->allow_enrol($instance)) {
+            $enrolments[] = array('statusCode' => 600, 'message'=>"EL USUARIO ${username} NO PUEDE DESMATRICULARSE EN EL CURSO ${coursefullname}", 'courseid'=>$idnumber);
             $statusCode = 600;
             continue;
           }
           $enrol->update_user_enrol($instance, $user->id, ENROL_USER_SUSPENDED);
+          $enrolments[] = array('statusCode' => 200, 'message'=>"USUARIO ${username} SUSPENDIDO EN ${idnumber} CON EXITO", 'courseid'=>$idnumber);
         }
       }
       if ($statusCode == 200){
         $transaction->allow_commit();
-        return array('statusCode'=>$statusCode, 'message'=>'DESMATRICULACION EXITOSA', 'username'=>$params['username']);
+        return array('statusCode'=>$statusCode, 'message'=>'DESMATRICULACION EXITOSA', 'username'=>$username, 'enrolments'=>$enrolments);
       }
-      return array('statusCode'=>$statusCode, 'message'=>'DESMATRICULACION SIN EXITO', 'username'=>$params['username']);
+      return array('statusCode'=>$statusCode, 'message'=>'DESMATRICULACION SIN EXITO', 'username'=>$username, 'enrolments'=>$enrolments);
     }
     public static function get_cursos($username){
       global $CFG, $DB;
@@ -443,7 +456,7 @@ class local_ccie_external extends external_api {
                   'enrolments' => new external_multiple_structure(
                       new external_single_structure(
                           array(
-                            'statusCode' => new external_value(PARAM_INT, 'Estado del estudiante dentro del curso: 0 (activo), 1 (suspendido), 2 (error, revisar message)'),
+                            'statusCode' => new external_value(PARAM_INT, 'Estado de la matriculación: 200 (exito), 600 (error, revisar message)'),
                             'message' => new external_value(PARAM_TEXT, 'Descripción del resultado de matriculación'),
                             'courseid' => new external_value(PARAM_TEXT, 'Número ID de un curso en moodle')
                           )
@@ -461,7 +474,16 @@ class local_ccie_external extends external_api {
                 array(
                     'statusCode' => new external_value(PARAM_TEXT, '0 (Exito) o 1 (fracaso)'),
                     'message' => new external_value(PARAM_TEXT, 'Breve descripción del resultado'),
-                    'username' => new external_value(PARAM_TEXT, 'Carné universitario del estudiante')
+                    'username' => new external_value(PARAM_TEXT, 'Carné universitario del estudiante'),
+                    'enrolments' => new external_multiple_structure(
+                        new external_single_structure(
+                            array(
+                              'statusCode' => new external_value(PARAM_INT, 'Estado de la desmatriculación: 200 (exito), 600 (error, revisar message)'),
+                              'message' => new external_value(PARAM_TEXT, 'Descripción del resultado de desmatriculación'),
+                              'courseid' => new external_value(PARAM_TEXT, 'Número ID de un curso en moodle')
+                            )
+                        )
+                    )
                 )
             );
     }
