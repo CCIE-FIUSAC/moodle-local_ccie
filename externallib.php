@@ -220,8 +220,8 @@ class local_ccie_external extends external_api {
         }
 
         // check if user is participating in the course
-        $enroleid = $DB->get_record('enrol', array('courseid'=>$courseid, 'enrol'=>'manual'), 'id');
-        $user_enrolments = $DB->get_record('user_enrolments', array('userid'=>$user->id, 'enrolid'=>$enroleid->id ), 'id, status');
+        $enrolid = $instance->id;
+        $user_enrolments = $DB->get_record('user_enrolments', array('userid'=>$user->id, 'enrolid'=>$enrolid ), 'id, status');
         if (!empty($user_enrolments)){
           if ($user_enrolments->status == ENROL_USER_ACTIVE){
             $enrolments[] = array('statusCode' => 200, 'message'=>"USUARIO ${username} ACTIVO EN ${idnumber} CON EXITO", 'courseid'=>$idnumber);
@@ -237,8 +237,11 @@ class local_ccie_external extends external_api {
 
         $enrolments[] = array('statusCode' => 200, 'message'=>"USUARIO ${username} MATRICULADO EN ${idnumber} CON EXITO", 'courseid'=>$idnumber);
       }
-      $transaction->allow_commit();
-      return array('statusCode'=>$statusCode, 'message'=>$statusCode==200?'MATRICULACION EXITOSA':'MATRICULACION SIN EXITO', 'username'=>$username, 'enrolments'=>$enrolments);
+      if ($statusCode == 200){
+        $transaction->allow_commit();
+        return array('statusCode'=>$statusCode, 'message'=>'MATRICULACION EXITOSA', 'username'=>$username, 'enrolments'=>$enrolments);
+      }
+      return array('statusCode'=>$statusCode, 'message'=>'MATRICULACION SIN EXITO', 'username'=>$username, 'enrolments'=>$enrolments);
     }
     public static function desmatricular($username, $idnumbers = array()) {
       global $DB, $CFG;
@@ -254,33 +257,76 @@ class local_ccie_external extends external_api {
       if (empty($user)){
         return array('statusCode'=>500, 'message'=>"USUARIO ${params['username']} NO EXISTE", 'username'=>$params['username']);
       }
-      $record = new stdclass;
-      $record->status = ENROL_USER_SUSPENDED;
+      // Retrieve the manual enrolment plugin.
+      $enrol = enrol_get_plugin('manual');
+      if (empty($enrol)) {
+        return array('statusCode'=>500, 'message'=>'MOODLE NO PUEDE MATRICULAR POR FALTA DE PLUGIN "manual"', 'username'=>$username);
+      }
+      $statusCode = 200;
       if (empty($params['idnumbers'])){
         $user_enrolments = $DB->get_recordset('user_enrolments',
-                      array('userid' => $user->id, 'status'=>ENROL_USER_ACTIVE),'', 'id');
+                      array('userid' => $user->id, 'status'=>ENROL_USER_ACTIVE),'', 'enrolid');
 
         foreach ($user_enrolments as $user_enrolment){
-          $record->id = $user_enrolment->id;
-          $DB->update_record('user_enrolments', $record);
+          // find courseid using enrolid
+          $course = $DB->get_record('enrol', array('id'=>$user_enrolment->enrolid), 'courseid', MUST_EXIST);
+          // Check manual enrolment plugin instance is enabled/exist.
+          $instance = null;
+          $enrolinstances = enrol_get_instances($course->courseid, true);
+          foreach ($enrolinstances as $courseenrolinstance) {
+            if ($courseenrolinstance->enrol == "manual") {
+              $instance = $courseenrolinstance;
+              break;
+            }
+          }
+          if (empty($instance)) {
+            $statusCode = 600;
+            continue;
+          }
+          // Check that the plugin accept enrolment
+          if (!$enrol->allow_enrol($instance)) {
+            $statusCode = 600;
+            continue;
+          }
+
+          $enrol->update_user_enrol($instance, $user->id, ENROL_USER_SUSPENDED);
         }
       } else {
         $idnumbers = $params['idnumbers'];
         foreach($idnumbers as $idnumber){
-          $course = $DB->get_record('course', array('idnumber'=>$idnumber), 'id', MUST_EXIST);
-          $enrol = $DB->get_record('enrol', array('courseid'=>$course->id, 'enrol'=>'manual'), 'id');
-          $user_enrolment = $DB->get_record('user_enrolments', array('userid'=>$user->id, 'enrolid'=>$enrol->id ), 'id, status');
-          if (empty($user_enrolment)){
-            // userid non existent in user_enrolments
+          try{
+            $course = $DB->get_record('course', array('idnumber'=>$idnumber), 'id', MUST_EXIST);
+          } catch (dml_exception $e) {
+            $statusCode = 600;
             continue;
           }
-          $record->id = $user_enrolment->id;
-          $DB->update_record('user_enrolments', $record);
-          // $enrol->update_user_enrol($instance, $user->id, ENROL_USER_ACTIVE);
+
+          // Check manual enrolment plugin instance is enabled/exist.
+          $instance = null;
+          $enrolinstances = enrol_get_instances($course->id, true);
+          foreach ($enrolinstances as $courseenrolinstance) {
+            if ($courseenrolinstance->enrol == "manual") {
+              $instance = $courseenrolinstance;
+              break;
+            }
+          }
+          if (empty($instance)) {
+            $statusCode = 600;
+            continue;
+          }
+          // Check that the plugin accept enrolment
+          if (!$enrol->allow_enrol($instance)) {
+            $statusCode = 600;
+            continue;
+          }
+          $enrol->update_user_enrol($instance, $user->id, ENROL_USER_SUSPENDED);
         }
       }
-      $transaction->allow_commit();
-      return array('statusCode'=>200, 'message'=>'DESMATRICULACION EXITOSA', 'username'=>$params['username']);
+      if ($statusCode == 200){
+        $transaction->allow_commit();
+        return array('statusCode'=>$statusCode, 'message'=>'DESMATRICULACION EXITOSA', 'username'=>$params['username']);
+      }
+      return array('statusCode'=>$statusCode, 'message'=>'DESMATRICULACION SIN EXITO', 'username'=>$params['username']);
     }
     public static function get_cursos($username){
       global $CFG, $DB;
