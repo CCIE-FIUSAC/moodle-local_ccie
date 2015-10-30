@@ -61,7 +61,8 @@ class local_ccie_external extends external_api {
                   'roleid' => new external_value(PARAM_INT, 'Role que tiene el usuario con el curso. Valores: 3 (editingteacher), 4 (teacher), 5 (student)', VALUE_REQUIRED, VALUE_DEFAULT, 5),
                   'idnumbers' => new external_multiple_structure(
                           new external_value(PARAM_RAW, 'Número ID del curso', VALUE_REQUIRED)
-                  )
+                  ),
+                  'password' => new external_value(PARAM_TEXT, 'Contraseña del usuario', VALUE_OPTIONAL),
                 )
         );
     }
@@ -110,9 +111,10 @@ class local_ccie_external extends external_api {
      * @param String $email Correo electronico @ingenieria.usac.edu.gt
      * @param Int $roleid 3 (editingteacher), 4 (teacher), 5 (student)
      * @param array $idnumbers Un array de número ID del curso, de cursos a matricular.
+     * @param String $password Contraeña del usuario
      * @since Moodle 2.8
      */
-    public static function matricular($username, $firstname, $lastname, $email, $roleid = 5, $idnumbers) {
+    public static function matricular($username, $firstname, $lastname, $email, $roleid = 5, $idnumbers, $password) {
       global $DB, $CFG;
 
       require_once($CFG->libdir . '/enrollib.php');
@@ -124,7 +126,8 @@ class local_ccie_external extends external_api {
               'lastname' => $lastname,
               'email' => $email,
               'roleid' => $roleid,
-              'idnumbers' => $idnumbers
+              'idnumbers' => $idnumbers,
+              'password' => $password
             ));
 
       // Ensure the current user is allowed to run this function.
@@ -149,7 +152,7 @@ class local_ccie_external extends external_api {
         $newuser->firstname = $params['firstname'];
         $newuser->lastname = $params['lastname'];
         // TODO swap $password for ''
-        $newuser->password = 'P4ssw@rd'.$params['username'];
+        $newuser->password = $params['password'];
         // TODO change manual to googleoauth2
         $newuser->auth = 'manual';
         $newuser->confirmed = true;
