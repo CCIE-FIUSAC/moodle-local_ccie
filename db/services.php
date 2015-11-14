@@ -52,13 +52,20 @@ $functions = array(
             'description' => 'Return course details',
             'type'        => 'read',
             'capabilities'=> 'moodle/course:view,moodle/course:update,moodle/course:viewhiddencourses'
+        ),
+        'local_ccie_get_authurl' => array(
+            'classname'   => 'local_ccie_external',
+            'methodname'  => 'get_authurl',
+            'classpath'   => 'local/ccie/externallib.php',
+            'description' => 'Return SSO url for external login',
+            'type'        => 'read'
         )
 );
 
 // We define the services to install as pre-build services. A pre-build service is not editable by administrator.
 $services = array(
         'Web Service CCIE' => array(
-                'functions' => array ('local_ccie_hello_world', 'local_ccie_matricular', 'local_ccie_desmatricular', 'local_ccie_get_cursos'),
+                'functions' => array ('local_ccie_hello_world', 'local_ccie_matricular', 'local_ccie_desmatricular', 'local_ccie_get_cursos', 'local_ccie_get_authurl'),
                 'restrictedusers' => 0,
                 'enabled'=>1,
         )

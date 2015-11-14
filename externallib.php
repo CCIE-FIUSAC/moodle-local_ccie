@@ -93,6 +93,17 @@ class local_ccie_external extends external_api {
         );
     }
     /**
+     * Returns SSO url for external login
+     *
+     * @return external_function_parameters
+     * @since Moodle 2.8
+     */
+    public static function get_authurl_parameters() {
+        return new external_function_parameters(
+                array()
+        );
+    }
+    /**
      * Returns description of method parameters
      * @return external_function_parameters
      */
@@ -423,6 +434,20 @@ class local_ccie_external extends external_api {
       return array('cursos'=>$coursesinfo);
     }
     /**
+     * Returns SSO url for external login
+     * 'auth_googleoauth2' plugin with OpenAM support must be installed and configured!
+     * @return string SSO url
+     */
+    public static function get_authurl(){
+      global $CFG;
+      require_once($CFG->dirroot . '/auth/googleoauth2/classes/provider/openam.php');
+      //$providerclassname = 'provideroauth2openam';
+      $provider = new provideroauth2openam();
+      $authurl = $provider->getAuthorizationUrl(array('state'=>'ccie'));
+      //$_SESSION['oauth2state_openam'] = $provider->state;
+      return array('authurl' => $authurl);
+    }
+    /**
      * Returns welcome message
      * @return string welcome message
      */
@@ -512,6 +537,13 @@ class local_ccie_external extends external_api {
                   )
               )
           );
+    }
+    /**
+     * Returns description of method result value
+     * @return external_description
+     */
+    public static function get_authurl_returns() {
+      return new external_single_structure(array('authurl' => new external_value(PARAM_TEXT, 'SSO URL for external login')));
     }
     /**
      * Returns description of method result value

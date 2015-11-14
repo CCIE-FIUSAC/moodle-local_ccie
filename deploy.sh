@@ -11,7 +11,7 @@ if [ $# -lt 1 ] || [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
     exit 0
 fi
 # versión del plugin
-version=2015092102
+version=2015111402
 # destino del instalador .zip
 destino=/mnt/memo
 if [[ $1 == "lo" ]]; then
