@@ -441,10 +441,8 @@ class local_ccie_external extends external_api {
     public static function get_authurl(){
       global $CFG;
       require_once($CFG->dirroot . '/auth/googleoauth2/classes/provider/openam.php');
-      //$providerclassname = 'provideroauth2openam';
       $provider = new provideroauth2openam();
       $authurl = $provider->getAuthorizationUrl(array('state'=>'ccie'));
-      //$_SESSION['oauth2state_openam'] = $provider->state;
       return array('authurl' => $authurl);
     }
     /**
