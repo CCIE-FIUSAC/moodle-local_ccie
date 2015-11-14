@@ -62,7 +62,7 @@ class local_ccie_external extends external_api {
                   'idnumbers' => new external_multiple_structure(
                           new external_value(PARAM_RAW, 'Número ID del curso', VALUE_REQUIRED)
                   ),
-                  'password' => new external_value(PARAM_TEXT, 'Contraseña del usuario', VALUE_OPTIONAL),
+                  'password' => new external_value(PARAM_TEXT, 'Contraseña del usuario', VALUE_DEFAULT, ''),
                 )
         );
     }
@@ -111,7 +111,7 @@ class local_ccie_external extends external_api {
      * @param String $email Correo electronico @ingenieria.usac.edu.gt
      * @param Int $roleid 3 (editingteacher), 4 (teacher), 5 (student)
      * @param array $idnumbers Un array de número ID del curso, de cursos a matricular.
-     * @param String $password Contraeña del usuario
+     * @param String $password Contraseña del usuario
      * @since Moodle 2.8
      */
     public static function matricular($username, $firstname, $lastname, $email, $roleid = 5, $idnumbers, $password) {
@@ -151,14 +151,15 @@ class local_ccie_external extends external_api {
         $newuser->email = $params['email'];
         $newuser->firstname = $params['firstname'];
         $newuser->lastname = $params['lastname'];
-        // TODO swap $password for ''
+        $emptyPassword = empty($params['password']);
+        // Es permitido la asginación de una contraseña vacía ''
         $newuser->password = $params['password'];
-        // TODO change manual to googleoauth2
-        $newuser->auth = 'manual';
+        // Si tiene contraseña vacía, asignarle 'googleoauth2' como medio de autentitación
+        $newuser->auth = $emptyPassword?'googleoauth2':'manual';
         $newuser->confirmed = true;
         $newuser->mnethostid = $CFG->mnet_localhost_id;
-        // TODO change 2nd param to false, when password is ''
-        $newuser->id = user_create_user($newuser, true, true);
+        // 2nd param is false, when password is ''
+        $newuser->id = user_create_user($newuser, !$emptyPassword, true);
         $user = $newuser;
       }
       $username = $params['username'];
