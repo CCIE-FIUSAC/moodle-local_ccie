@@ -15,19 +15,19 @@ Recurso disponible para clientes autorizados en
 
 # Package
 
-1. Copiar carpeta de código fuente hacia una carpeta temporal
+Paso 1. Copiar carpeta de código fuente hacia una carpeta temporal
 ```bash
 cp -r moodle-local_ccie /tmp
 mv /tmp/{moodle-local_ccie,ccie}
 ```
 
-2. Eliminar ficheros de desarrollo
+Paso 2. Eliminar ficheros de desarrollo
 ```bash
 cd /tmp
 rm -rf ccie/.git ccie/*.sh
 ```
 
-3. Crear Zip
+Paso 3. Crear Zip
 ```bash
 version=2016011401
 zip -r local_ccie_moodle28_$version.zip ccie
