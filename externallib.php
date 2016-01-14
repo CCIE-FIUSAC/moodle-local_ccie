@@ -163,7 +163,7 @@ class local_ccie_external extends external_api {
         $newuser->firstname = $params['firstname'];
         $newuser->lastname = $params['lastname'];
         $emptyPassword = empty($params['password']);
-        // Es permitido la asginación de una contraseña vacía ''
+        // Es permitido la asignación de una contraseña vacía ''
         $newuser->password = $params['password'];
         // Si tiene contraseña vacía, asignarle 'googleoauth2' como medio de autentitación
         $newuser->auth = $emptyPassword?'googleoauth2':'manual';
