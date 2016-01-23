@@ -104,6 +104,20 @@ class local_ccie_external extends external_api {
         );
     }
     /**
+     * Returns SSO url for external login
+     *
+     * @return external_function_parameters
+     * @since Moodle 2.8
+     */
+    public static function set_password_parameters() {
+        return new external_function_parameters(
+                array(
+                  'username' => new external_value(PARAM_USERNAME, 'Carné universitario'),
+                  'password' => new external_value(PARAM_RAW, 'Contraseña del usuario'),
+                )
+        );
+    }
+    /**
      * Returns description of method parameters
      * @return external_function_parameters
      */
@@ -451,6 +465,43 @@ class local_ccie_external extends external_api {
       return array('authurl' => $authurl);
     }
     /**
+     * Cambia la contraseña de un estudiante.
+     *
+     * Function throw an exception at the first error encountered.
+     * @param String $username Carne
+     * @param String $password Contraseña del usuario
+     * @since Moodle 2.9
+     */
+    public static function set_password($username, $password) {
+      global $DB, $CFG;
+
+      require_once($CFG->dirroot . '/user/lib.php');
+
+      $params = self::validate_parameters(self::set_password_parameters(),
+              array('username' => $username,
+              'password' => $password
+            ));
+
+      // Ensure the current user is allowed to run this function.
+      $context = context_system::instance();
+      self::validate_context($context);
+      require_capability('moodle/user:update', $context);
+      $transaction = $DB->start_delegated_transaction(); // Rollback all enrolment if an error occurs
+                                                           // (except if the DB doesn't support it).
+      // Get the user.
+      $user = $DB->get_record('user',
+                    array('username' => $params['username'], 'deleted' => 0, 'mnethostid' => $CFG->mnet_localhost_id), 'id');
+
+      if (empty($user)){
+        return array('statusCode'=>500, 'message'=>"No existe el usuario ${params['username']}");
+      }
+      // continuar flujo normal
+      $user->password = $params['password'];
+      user_update_user($user);
+      $transaction->allow_commit();
+      return array('statusCode'=>200, 'message'=>"Se ha modificado la contraseña del usuario ${params['username']}");
+    }
+    /**
      * Returns welcome message
      * @return string welcome message
      */
@@ -548,6 +599,18 @@ class local_ccie_external extends external_api {
     public static function get_authurl_returns() {
       return new external_single_structure(array('authurl' => new external_value(PARAM_TEXT, 'SSO URL for external login')));
     }
+    /**
+     * Returns description of method result value
+     * @return external_description
+     */
+    public static function set_password_returns() {
+       return new external_single_structure(
+               array(
+                   'statusCode' => new external_value(PARAM_TEXT, '200 (Exito) o 500 (fracaso)'),
+                   'message' => new external_value(PARAM_TEXT, 'Breve descripción del resultado'),
+               )
+           );
+     }
     /**
      * Returns description of method result value
      * @return external_description

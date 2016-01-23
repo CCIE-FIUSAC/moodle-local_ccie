@@ -10,6 +10,7 @@ Recurso disponible para clientes autorizados en
 * `desmatricular` un usuario modifica su estado a `suspended`.
 * `get_cursos` obtiene el listado de cursos disponibles para matricular.
 * `get_authurl` obtiene el enlace para iniciar sesión en modalidad SSO.
+* `set_password` Cambia la contraseña de un estudiante.
 
 > NOTA: Moodle debe tener instalado [googleoauth2](https://github.com/CCIE-FIUSAC/moodle-auth_googleoauth2) para utilizar `get_authurl`
 
