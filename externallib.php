@@ -533,7 +533,7 @@ class local_ccie_external extends external_api {
     public static function matricular_returns() {
       return new external_single_structure(
               array(
-                  'statusCode' => new external_value(PARAM_TEXT, '0 (Exito) o 1 (fracaso)'),
+                  'statusCode' => new external_value(PARAM_TEXT, '200 (Exito) o 500 (fracaso)'),
                   'message' => new external_value(PARAM_TEXT, 'Breve descripción del resultado'),
                   'username' => new external_value(PARAM_TEXT, 'Carné universitario del estudiante'),
                   'enrolments' => new external_multiple_structure(
@@ -555,7 +555,7 @@ class local_ccie_external extends external_api {
     public static function desmatricular_returns() {
         return new external_single_structure(
                 array(
-                    'statusCode' => new external_value(PARAM_TEXT, '0 (Exito) o 1 (fracaso)'),
+                    'statusCode' => new external_value(PARAM_TEXT, '200 (Exito) o 500 (fracaso)'),
                     'message' => new external_value(PARAM_TEXT, 'Breve descripción del resultado'),
                     'username' => new external_value(PARAM_TEXT, 'Carné universitario del estudiante'),
                     'enrolments' => new external_multiple_structure(
